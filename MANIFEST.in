@@ -1,0 +1,6 @@
+include tox.ini
+include tests/*.py
+include sphinxdocs/*
+include sphinxdocs/_static/*
+include .coveragerc
+include .pylintrc

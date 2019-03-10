@@ -1,0 +1,17 @@
+*.pyc
+*.swp
+dist/*
+.idea/*
+src/crl.remotescript.egg-info/*
+sphinxdocs/robotdocs.rst
+robotdocs/*.html
+build/*
+.cache/*
+.coverage
+.tox/*
+build_dir/*
+coverage.xml
+junit.xml
+log.html
+output.xml
+report.html
