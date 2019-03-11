@@ -14,7 +14,7 @@ robotdocs = {
          'synopsis': 'Library for executing remote commands.'},
     'crl.remotescript.FP':
         {'docformat': 'robot',
-         'synopsis': 'FlexiPlatform specific extension to *RemoteScript*'
+         'synopsis': 'Multi-node specific extension to *RemoteScript*'
                      ' library.'},
     'crl.remotescript.baseengine':
         {'docformat': 'robot',

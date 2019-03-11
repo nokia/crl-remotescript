@@ -9,7 +9,7 @@ __version__ = '__VERSION__'
 
 class FP(RemoteScript):
     """
-    FlexiPlatform specific extensions to [crl.remotescript.RemoteScript.html|RemoteScript]
+    Multi-node specific extensions to [crl.remotescript.RemoteScript.html|RemoteScript]
     library.
 
     Keywords defined in this library are: `Execute Command In Node`,

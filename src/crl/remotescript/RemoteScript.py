@@ -15,7 +15,7 @@ class RemoteScript(object):
     See also [crl.remotescript.result.Result.html|Result] and
     [crl.remotescript.target.Target.html|Target].
 
-    FlexiPlatform specific extensions are implemented in subclass
+    Multi-node specific extensions are implemented in subclass
     [crl.remotescript.FP.html|RemoteScript.FP].
 
     With this library the test targets are first defined with `Set
@@ -131,7 +131,7 @@ class RemoteScript(object):
         | _su password_     | Target su password | None |
         | _su username_     | Target su username. If defined, command and script  execution \
                 related keywords will do the execution under  this account. *NOTE:* \
-                FlexiPlatform specific keywords in [crl.remotescript.FP.html|RemoteScript.FP] \
+                Multi-node specific keywords in [crl.remotescript.FP.html|RemoteScript.FP] \
                 use this _su username_  (if defined) in all SSH/SCP operations  between CLA \
                 and nodes (not doing su). *LIMITATIONS:* Commands may not contain single \
                 quotes (double quotes are ok). Stdout and stderr are combined to \
