@@ -2,6 +2,10 @@
 
 CHANGES
 =======
+1.0.2
+-----
+
+- Refactor to be python 3 compatible
 
 1.0.1
 -----

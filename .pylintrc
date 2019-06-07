@@ -67,7 +67,8 @@ confidence=
 # --disable=W"
 disable=missing-docstring,redefined-builtin,redefined-outer-name,
     anomalous-backslash-in-string,no-name-in-module,arguments-differ,
-    super-init-not-called,duplicate-code,relative-import,no-member
+    super-init-not-called,duplicate-code,relative-import,no-member,
+    useless-object-inheritance
 
 
 [REPORTS]

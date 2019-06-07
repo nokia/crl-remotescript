@@ -373,8 +373,8 @@ class BaseEngine(object):
                     self.__disconnect()
                     if self._get_bool_target_property(target, 'connection failure is error'):
                         raise
-                    else:
-                        return False
+                    return False
+
         self._thread_local.transaction_level += 1
         return True
 
@@ -469,7 +469,7 @@ class BaseEngine(object):
 
     def _debug(self, message):
         msg = threading.currentThread().getName() + ' ' + message
-        if threading.currentThread == self._main_thread:
+        if threading.currentThread() == self._main_thread:
             debug(msg)
         else:
             self._thread_local.messages.append(msg)

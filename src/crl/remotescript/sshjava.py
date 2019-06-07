@@ -184,7 +184,7 @@ class SSHClient(object):
             try:
                 sftp.stat(curdir)
             except IOException:
-                sftp.mkdir(curdir, 0744)
+                sftp.mkdir(curdir, 0o744)
 
     def get_file(self, src_file, dst_file):
         sftp = SFTPv3Client(self.client)

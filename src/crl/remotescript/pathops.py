@@ -1,5 +1,7 @@
 __copyright__ = 'Copyright (C) 2019, Nokia'
 
+import sys
+
 
 def append(path, extension):
     path = path.rstrip('/')
@@ -20,7 +22,6 @@ def directorize(path):
 
 
 def unic(out):
-    try:
-        return unicode(out, errors='replace')
-    except ValueError:
-        return out
+    if sys.version_info.major == 2:
+        return unicode(out, errors='replace')  # pylint: disable=undefined-variable
+    return out

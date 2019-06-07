@@ -3,7 +3,7 @@
 version: 2
 
 python:
-   version: 2.7
+   version: 3.7
    install:
       - requirements: sphinxdocs/requirements.txt
       - method: setuptools
@@ -12,3 +12,4 @@ python:
 
 sphinx:
    configuration: sphinxdocs/conf.py
+

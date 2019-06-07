@@ -6,9 +6,9 @@ import sys
 import time
 from logging import debug
 import paramiko
-from scp import SCPClient
-from remotefile import RemoteFile
-from result import Result
+from .scp import SCPClient
+from .remotefile import RemoteFile
+from .result import Result
 
 
 __copyright__ = 'Copyright (C) 2019, Nokia'
