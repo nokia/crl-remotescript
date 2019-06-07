@@ -1,4 +1,5 @@
 # pylint: disable=too-many-branches,too-many-statements
+# pylint: disable=anomalous-backslash-in-string
 import os
 import posixpath
 import re
@@ -9,22 +10,21 @@ import paramiko
 from .scp import SCPClient
 from .remotefile import RemoteFile
 from .result import Result
+from .SSHClientBase import (
+    SSHClientBase,
+    SSHException)
 
 
 __copyright__ = 'Copyright (C) 2019, Nokia'
 
 
-class SSHClient(object):
-
-    BUFFER_SIZE = 32768
+class SSHClient(SSHClientBase):
 
     def __init__(self):
-        self.client = None
+        super(SSHClient, self).__init__()
         self.host = None
         self.port = None
         self.timeout = None
-        self.su_username = None
-        self.su_password = None
         self.use_sudo_user = False
 
     def open_connection(self, host, port, timeout):
@@ -36,28 +36,11 @@ class SSHClient(object):
         self.client.connect(self.host, self.port, username, password=password, key_filename=key_filename,
                             timeout=self.timeout, allow_agent=False)
 
-    def set_su_user(self, username, password=None):
-        self.su_username = username
-        self.su_password = password
-
     def set_use_sudo_user(self):
         self.use_sudo_user = True
 
-    def get_su_username(self):
-        return self.su_username
-
-    def get_su_command(self, command):
-        if self.su_username:
-            if re.search("'", command):
-                raise SSHException(
-                    'Su command may not contain single quotes. Consider using double quotes: "' +
-                    command + '"')
-            return self._su_command_template.format(su_username=self.su_username,
-                                                    command=command)
-        return command
-
     @property
-    def _su_command_template(self):
+    def su_command_template(self):
         return ("sudo -u {su_username} {command}"
                 if self.use_sudo_user else
                 "su - {su_username} -c '{command}'")
@@ -73,18 +56,19 @@ class SSHClient(object):
         chan.settimeout(1.0)
         try:
             # if the command executed with 'sudo' prefix the terminal needed as well
-            if (self.su_username and self.su_password) or (re.search("\ssudo\s.*", command, re.IGNORECASE) is not None):
+            if ((self.su_username and self.su_password)
+                    or (re.search("\ssudo\s.*", command, re.IGNORECASE) is not None)):  # noqa: W605
                 chan.get_pty()
             chan.exec_command(command)
             while not self.client.get_transport().is_active():
                 time.sleep(0.1)
                 try:
                     self.client.get_transport().send_ignore(1)
-                except:
+                except:  # noqa: E722
                     raise SSHException("Connection closed unexpectedly: " + str(sys.exc_info()[1]))
 
-            out = ""
-            err = ""
+            out = b""
+            err = b""
             password_sent = False
             if self.su_username and self.su_password:
                 for _ in range(100):
@@ -94,7 +78,7 @@ class SSHClient(object):
                         time.sleep(0.1)
                     else:
                         out += chan.recv(SSHClient.BUFFER_SIZE)
-                        outmatch = re.match(".*[P|p]assword:\s*$", out, re.DOTALL)
+                        outmatch = re.match(b".*[P|p]assword:\s*$", out, re.DOTALL)  # noqa: W605
                         if outmatch:
                             stdin = chan.makefile('wb', -1)
                             stdin.write('%s\n' % self.su_password)
@@ -103,7 +87,7 @@ class SSHClient(object):
                             break
 
             if password_sent:
-                out = ""
+                out = b""
 
             counter = 0
             while self.client.get_transport().is_active():
@@ -153,36 +137,26 @@ class SSHClient(object):
             sftp.close()
 
     @staticmethod
-    def _resolve_dir(sftp, dst_dir):
-        dst_home = sftp.normalize('.')
-        dst_dir = dst_dir.split(':')[-1].replace('\\', '/')
-        if dst_dir == '.':
-            dst_dir = dst_home + '/'
-        if not posixpath.isabs(dst_dir):
-            dst_dir = posixpath.join(dst_home, dst_dir)
-        return dst_dir
-
-    @staticmethod
     def _create_missing_dirs(sftp, dst_dir):
         if dst_dir[0] == '/':
             sftp.chdir('/')
-        for dir in dst_dir.split('/'):
+        for d in dst_dir.split('/'):
             sftp_working_directory = sftp.getcwd()
-            if (dir and dir != '.' and dir != '..' and
-                    dir not in sftp.listdir(sftp_working_directory)):
-                debug("Creating remote directory (%s/%s)" % (sftp_working_directory, dir))
+            if (d and d != '.' and d != '..' and
+                    d not in sftp.listdir(sftp_working_directory)):
+                debug("Creating remote directory (%s/%s)" % (sftp_working_directory, d))
                 try:
-                    sftp.mkdir(dir)
+                    sftp.mkdir(d)
                 except Exception as e:
                     raise Exception(
                         'Cannot create directory "%s" under "%s" in the remote host: %s'
-                        % (dir, sftp_working_directory, e))
+                        % (d, sftp_working_directory, e))
             try:
-                sftp.chdir(dir)
+                sftp.chdir(d)
             except Exception as e:
                 raise Exception(
                     'Cannot cd to newly created directory "%s" under "%s" in the remote host: %s'
-                    % (dir, sftp_working_directory, e))
+                    % (d, sftp_working_directory, e))
 
     def get_file(self, src_file, dst_file):
         sftp = self.client.open_sftp()
@@ -216,11 +190,11 @@ class SSHClient(object):
             raise IOError('Size mismatch in copying:  %d != %d' % (
                 file_from_stat.st_size, file_to_size))
 
-    def get_remote_fd(self, dir, filename):
+    def get_remote_fd(self, directory, filename):
         sftp = self.client.open_sftp()
-        dir = self._resolve_dir(sftp, dir)
-        self._create_missing_dirs(sftp, dir)
-        file_path = posixpath.join(dir, filename)
+        directory = self._resolve_dir(sftp, directory)
+        self._create_missing_dirs(sftp, directory)
+        file_path = posixpath.join(directory, filename)
         fd = sftp.open(file_path, 'wb')
         return SFTPRemoteFile(sftp, fd)
 
@@ -240,7 +214,3 @@ class SFTPRemoteFile(RemoteFile):
     def close(self):
         self._fd.close()
         self._sftp.close()
-
-
-class SSHException(Exception):
-    pass

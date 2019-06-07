@@ -4,8 +4,6 @@ import posixpath
 import re
 import sys
 import time
-from remotefile import RemoteFile
-from result import Result
 # pylint: disable=import-error
 from com.trilead.ssh2 import (
     ChannelCondition,
@@ -16,22 +14,18 @@ from com.trilead.ssh2 import (
 import jarray
 from java.io import BufferedReader, InputStreamReader, FileOutputStream, IOException
 # pylint: enable=import-error
+from .remotefile import RemoteFile
+from .result import Result
+from .SSHClientBase import (
+    SSHClientBase, SSHException)
 sys.path.append(os.path.join(
     os.path.split(os.path.abspath(__file__))[0], 'trilead-ssh2-' +
     '__TRILEAD_SSH2_VERSION__' + '.jar'))
 
-
 __copyright__ = 'Copyright (C) 2019, Nokia'
 
 
-class SSHClient(object):
-
-    BUFFER_SIZE = 32768
-
-    def __init__(self):
-        self.client = None
-        self.su_username = None
-        self.su_password = None
+class SSHClient(SSHClientBase):
 
     def open_connection(self, host, port, timeout):
         self.client = Connection(host, int(port))
@@ -42,21 +36,9 @@ class SSHClient(object):
         if not self.client.authenticateWithPassword(username, password):
             raise SSHException('Login failed with username "%s"' % username)
 
-    def set_su_user(self, username, password=None):
-        self.su_username = username
-        self.su_password = password
-
-    def get_su_username(self):
-        return self.su_username
-
-    def get_su_command(self, command):
-        if self.su_username:
-            if re.search("'", command):
-                raise SSHException(
-                    'Su command may not contain single quotes. Consider using double quotes: "' +
-                    command + '"')
-            return "su - %s -c '%s'" % (self.su_username, command)
-        return command
+    @property
+    def su_command_template(self):
+        return "su - {su_username} -c '{command}'"
 
     def close_connection(self):
         self.client.close()
@@ -92,7 +74,8 @@ class SSHClient(object):
                             break
                         if datalen > 0:
                             out += ''.join([str(c) for c in data[0:datalen]])
-                        outmatch = re.match(".*[P|p]assword:\s*$", out, re.DOTALL)
+                        # pylint: disable=anomalous-backslash-in-string
+                        outmatch = re.match(".*[P|p]assword:\s*$", out, re.DOTALL)  # noqa: W605
                         if outmatch:
                             stdin.write('%s\n' % self.su_password)
                             stdin.flush()
@@ -166,21 +149,11 @@ class SSHClient(object):
             sftp.close()
 
     @staticmethod
-    def _resolve_dir(sftp, dst_dir):
-        dst_home = sftp.canonicalPath('.')
-        dst_dir = dst_dir.split(':')[-1].replace('\\', '/')
-        if dst_dir == '.':
-            dst_dir = dst_home + '/'
-        if not posixpath.isabs(dst_dir):
-            dst_dir = posixpath.join(dst_home, dst_dir)
-        return dst_dir
-
-    @staticmethod
     def _create_missing_dirs(sftp, dst_dir):
         curdir = '/'
-        for dir in dst_dir.split('/'):
-            if dir:
-                curdir = '%s/%s' % (curdir, dir)
+        for directory in dst_dir.split('/'):
+            if directory:
+                curdir = '%s/%s' % (curdir, directory)
             try:
                 sftp.stat(curdir)
             except IOException:
@@ -246,11 +219,11 @@ class SSHClient(object):
             raise IOError('Size mismatch in copying:  %d != %d' % (
                 src_size, file_to_size))
 
-    def get_remote_fd(self, dir, filename):
+    def get_remote_fd(self, directory, filename):
         sftp = SFTPv3Client(self.client)
-        dir = self._resolve_dir(sftp, dir)
-        self._create_missing_dirs(sftp, dir)
-        file_path = posixpath.join(dir, filename)
+        directory = self._resolve_dir(sftp, directory)
+        self._create_missing_dirs(sftp, directory)
+        file_path = posixpath.join(directory, filename)
         fd = sftp.createFile(file_path)
         return SFTPRemoteFile(sftp, fd)
 
@@ -275,7 +248,3 @@ class SFTPRemoteFile(RemoteFile):
     def close(self):
         self._sftp.closeFile(self._fd)
         self._sftp.close()
-
-
-class SSHException(Exception):
-    pass

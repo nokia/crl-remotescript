@@ -1,3 +1,4 @@
+# pylint: disable=redefined-builtin
 import os
 import re
 import sys
@@ -67,8 +68,8 @@ class FPEngine(BaseEngine):
         node_temp_dir = pathops.append(
             self._get_str_target_property(target, 'node_tempdir'), '-' + exec_id)
         node_temp_file = pathops.join(node_temp_dir, filename)
-        self._mkdir_impl(target_temp_dir, '0777', target, exec_id)
-        self._put_file_impl(file, target_temp_dir, '0777', target, exec_id)
+        self._mkdir_impl(target_temp_dir, oct(0o777), target, exec_id)
+        self._put_file_impl(file, target_temp_dir, oct(0o777), target, exec_id)
         sunode = self._add_su_user(node)
         command = FPEngine.SSH_CMD + ' ' + sunode + ' \'cd ' + node_temp_dir + '; chmod +x ' + node_temp_file + '; '
         command += BaseEngine.CONNECTION_MONITOR_CMD + '; ' + node_temp_file + "'"
@@ -107,8 +108,8 @@ class FPEngine(BaseEngine):
         destination_file = pathops.join(destination_dir, filename)
         self._debug(''.join(['Copying localhost:', source_file, ' -> ', target, ':', target_temp_file,
                              ' -> ', target, ':', node, ':', destination_file]))
-        self._mkdir_impl(target_temp_dir, '0777', target, exec_id)
-        self._put_file_impl(source_file, target_temp_dir, '0777', target, exec_id)
+        self._mkdir_impl(target_temp_dir, oct(0o777), target, exec_id)
+        self._put_file_impl(source_file, target_temp_dir, oct(0o777), target, exec_id)
         sunode = self._add_su_user(node)
         result = self._execute_impl(
             FPEngine.SSH_CMD + ' ' + sunode + ' "umask 0000; mkdir -p ' + destination_dir + '"', target, exec_id)

@@ -1,3 +1,4 @@
+# pylint: disable=redefined-builtin
 from crl.remotescript.RemoteScript import RemoteScript
 from crl.remotescript.fpengine import FPEngine
 
@@ -16,9 +17,9 @@ class FP(RemoteScript):
     `Execute Background Command In Node`, `Execute Script In Node`,
     `Execute Background Script In Node`, `Copy File To Node`, `Copy File From Node`
     """
-
-    def __init__(self):
-        self._engine = FPEngine()
+    @staticmethod
+    def _engine_factory():
+        return FPEngine()
 
     def node(self, node, command, target='default', exec_id='foreground', timeout=None):
         """*DEPRECATED* Keyword has been renamed to `Execute Command In Node`."""
@@ -143,13 +144,13 @@ class FP(RemoteScript):
         """
         self._engine.node_execute_script_background(node, file, target, exec_id)
 
-    def node_put_file(self, node, source_file, destination_dir='.', mode='0755',
+    def node_put_file(self, node, source_file, destination_dir='.', mode=oct(0o755),
                       target='default', exec_id='foreground', timeout=None):
         """*DEPRECATED* Keyword has been renamed to `Copy File To Node`."""
         return self._engine.node_put_file(
             node, source_file, destination_dir, mode, target, exec_id, timeout)
 
-    def copy_file_to_node(self, node, source_file, destination_dir='.', mode='0755',
+    def copy_file_to_node(self, node, source_file, destination_dir='.', mode=oct(0o755),
                           target='default', exec_id='foreground', timeout=None):
         """
         Copy file from local host through primary target to the target node.

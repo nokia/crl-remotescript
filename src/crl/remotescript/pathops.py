@@ -23,5 +23,5 @@ def directorize(path):
 
 def unic(out):
     if sys.version_info.major == 2:
-        return unicode(out, errors='replace')  # pylint: disable=undefined-variable
+        return unicode(out, errors='replace')  # pylint: disable=undefined-variable; # noqa: F821
     return out

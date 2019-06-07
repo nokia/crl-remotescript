@@ -1,3 +1,4 @@
+# pylint: disable=redefined-builtin
 from crl.remotescript import RemoteScript
 from crl.remotescript import FP
 

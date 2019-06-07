@@ -1,5 +1,6 @@
 from crl.remotescript import pathops
-
+from crl.remotescript.compatibility import (
+    unic_to_string, py23_unic)
 
 __copyright__ = 'Copyright (C) 2019, Nokia'
 
@@ -18,7 +19,6 @@ class Result(object):
     |          | Should Be Equal | ${result.stdout}          | foo                   |
     |          | Should Be Equal | ${result.stderr}          | bar                   |
     |          | Should Be Equal | ${result.connection_ok}   | True                  |
-    |          | Should Be Equal | ${result.close_ok}        | True                  |
 
     | testcase | ${result}=      | Execute Command In Target | echo foo; echo bar>&2 |
     |          | Log             | ${result}                 |                       |
@@ -44,8 +44,8 @@ class Result(object):
                      See also 'connection break is error' property\n
         """
         self.status = status
-        self.stdout = stdout
-        self.stderr = stderr
+        self.stdout = unic_to_string(py23_unic(stdout))
+        self.stderr = unic_to_string(py23_unic(stderr))
         self.connection_ok = connection_ok
         self._close_ok = close_ok
 

@@ -1,3 +1,4 @@
+# pylint: disable=redefined-builtin
 from crl.remotescript.baseengine import BaseEngine
 from crl.remotescript.target import Target
 
@@ -54,11 +55,15 @@ class RemoteScript(object):
     ROBOT_LIBRARY_SCOPE = 'TEST CASE'
 
     def __init__(self):
-        self._engine = BaseEngine()
+        self._engine = self._engine_factory()
+
+    @staticmethod
+    def _engine_factory():
+        return BaseEngine()
 
     def __str__(self):
         ret = 'RemoteScript instance\ntargets:'
-        for name, target in self._engine.targets.iteritems():
+        for name, target in self._engine.targets.items():
             ret += name + ' ' + str(target) + '\n'
         return ret
 
@@ -84,7 +89,8 @@ class RemoteScript(object):
 
     def set_target_with_sshkeyfile(self, host, username, sshkeyfile, name='default', protocol='ssh/sftp'):
         """
-        Exactly as `Set Target` but instead of a password, a ssh private key file is expected as input
+        Exactly as `Set Target` but instead of a password, a ssh private key file is expected as input\n
+        Due to paramiko the used key pair must be Ed25519 type
 
         *Arguments:*\n
         _sshkeyfile_: Ssh key file for the _username_\n
@@ -325,13 +331,13 @@ class RemoteScript(object):
         """
         self._engine.kill_background(exec_id)
 
-    def put_file(self, source_file, destination_dir='.', mode='0755',
+    def put_file(self, source_file, destination_dir='.', mode=oct(0o755),
                  target='default', exec_id='foreground', timeout=None):
         """*DEPRECATED* Keyword has been renamed to `Copy File To Target`."""
         return self._engine.put_file(source_file, destination_dir, mode, target, exec_id, timeout)
 
     def copy_file_to_target(self, source_file, destination_dir='.',
-                            mode='0755', target='default', exec_id='foreground', timeout=None):
+                            mode=oct(0o755), target='default', exec_id='foreground', timeout=None):
         """
         Copy file from local host to the target.
 
@@ -357,7 +363,7 @@ class RemoteScript(object):
         return self._engine.put_file(source_file, destination_dir, mode, target, exec_id, timeout)
 
     def copy_file_between_targets(self, from_target, source_file, to_target,
-                                  destination_dir=".", mode='0755', exec_id='foreground', timeout=None):
+                                  destination_dir=".", mode=oct(0o755), exec_id='foreground', timeout=None):
         """
         Copy file from one remote target to another. Supports only SFTP.
 
@@ -405,12 +411,12 @@ class RemoteScript(object):
         """
         return self._engine.get_file(source_file, destination, target, exec_id, timeout)
 
-    def put_dir(self, source_dir, target_dir='.', mode='0755',
+    def put_dir(self, source_dir, target_dir='.', mode=oct(0o755),
                 target='default', exec_id='foreground', timeout=None):
         """*DEPRECATED* Keyword has been renamed to `Copy Directory To Target`."""
         return self._engine.put_dir(source_dir, target_dir, mode, target, exec_id, timeout)
 
-    def copy_directory_to_target(self, source_dir, target_dir='.', mode='0755',
+    def copy_directory_to_target(self, source_dir, target_dir='.', mode=oct(0o755),
                                  target='default', exec_id='foreground', timeout=None):
         """
         Copies contents of local source directory to remote destination directory.
@@ -431,11 +437,11 @@ class RemoteScript(object):
         """
         return self._engine.put_dir(source_dir, target_dir, mode, target, exec_id, timeout)
 
-    def mkdir(self, path, mode='0755', target='default', exec_id='foreground', timeout=None):
+    def mkdir(self, path, mode=oct(0o755), target='default', exec_id='foreground', timeout=None):
         """*DEPRECATED* Keyword has been renamed to `Create Directory In Target`."""
         return self._engine.mkdir(path, mode, target, exec_id, timeout)
 
-    def create_directory_in_target(self, path, mode='0755', target='default', exec_id='foreground', timeout=None):
+    def create_directory_in_target(self, path, mode=oct(0o755), target='default', exec_id='foreground', timeout=None):
         """
         Create a directory including missing parent directories in the target.
 

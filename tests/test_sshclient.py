@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name
 import pytest
 import mock
 from fixtureresources.fixtures import create_patch

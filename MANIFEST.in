@@ -4,3 +4,5 @@ include sphinxdocs/*
 include sphinxdocs/_static/*
 include .coveragerc
 include .pylintrc
+include  etc/*
+include  robottests/*

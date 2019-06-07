@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-import imp
+import sys
+import importlib
 from setuptools import setup, find_packages
 
 
@@ -13,7 +14,13 @@ VERSIONFILE = os.path.join(
 
 
 def get_version():
-    return imp.load_source('_version', VERSIONFILE).get_version()
+    if sys.version_info.major == 2:
+        import imp
+        return imp.load_source('_version', VERSIONFILE).get_version()
+    spec = importlib.util.spec_from_file_location('_version', VERSIONFILE)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.get_version()
 
 
 def read(fname):
@@ -35,6 +42,9 @@ setup(
                  'License :: OSI Approved :: BSD License',
                  'Programming Language :: Python :: 2',
                  'Programming Language :: Python :: 2.7',
+                 'Programming Language :: Python :: 3',
+                 'Programming Language :: Python :: 3.6',
+                 'Programming Language :: Python :: 3.7',
                  'Topic :: Software Development'],
     keywords='SSH Telnet SFTP FTP',
     url='https://github.com/nokia/crl-remotescript',

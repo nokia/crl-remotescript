@@ -2,6 +2,13 @@
 
 CHANGES
 =======
+
+1.0.3
+-----
+
+- Correct Python 3 incompatibilities and add new Robot Framework acceptance
+  tests.
+
 1.0.2
 -----
 
@@ -10,7 +17,7 @@ CHANGES
 1.0.1
 -----
 
-- Correct REDME formatting
+- Correct README formatting
 
 1.0
 ---

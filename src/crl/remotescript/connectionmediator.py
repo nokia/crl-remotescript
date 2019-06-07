@@ -4,6 +4,7 @@ import re
 import shutil
 import sys
 import tempfile
+import ftplib
 from ftplib import FTP as PythonFTP
 from robot.libraries import Telnet as RobotTelnet
 from crl.remotescript.result import Result
@@ -24,6 +25,10 @@ class ConnectionMediator(object):
     because multi connection handling facilities in the libraries are
     not thread safe (at least for some libs).
     """
+
+    @property
+    def lib(self):
+        raise NotImplementedError()
 
     def open_connection(self, host, port, timeout, prompt, prompt_is_regexp):
         self.lib.open_connection(host, port, timeout)
@@ -75,7 +80,7 @@ class ConnectionMediator(object):
             to_fd.close()
 
     # Must return RemoteFile
-    def get_remote_fd(self, dir, filename):
+    def get_remote_fd(self, directory, filename):
         raise NotImplementedError()
 
     def remote_copy(self, src, to_fd):
@@ -87,7 +92,11 @@ class Telnet(ConnectionMediator):
     EXIT_STATUS_CMD = 'echo -e "\n$?"'
 
     def __init__(self):
-        self.lib = RobotTelnet()  # pylint: disable=not-callable
+        self._lib = RobotTelnet()  # pylint: disable=not-callable
+
+    @property
+    def lib(self):
+        return self._lib
 
     def open_connection(self, host, port, timeout, prompt, prompt_is_regexp):
         self.lib.open_connection(host, timeout=timeout, port=port)
@@ -100,7 +109,8 @@ class Telnet(ConnectionMediator):
         status = Result.UNKNOWN_STATUS
         out = self.lib.execute_command(command + '; ' + Telnet.EXIT_STATUS_CMD)
         out = out.rstrip()
-        output = re.match("^(.*)\n(\d+)$", out, re.DOTALL)
+        # pylint: disable=anomalous-backslash-in-string
+        output = re.match("^(.*)\n(\d+)$", out, re.DOTALL)  # noqa: W605
         if output:
             out = output.group(1).strip()
             status = output.group(2)
@@ -109,12 +119,16 @@ class Telnet(ConnectionMediator):
 
 class SSH(ConnectionMediator):
     def __init__(self):
-        self.lib = SSHClient()
+        self._lib = SSHClient()
+
+    @property
+    def lib(self):
+        return self._lib
 
     def login_with_key(self, username, sshkeyfile):
         self.lib.login(username, key_filename=sshkeyfile)
 
-    def set_su_user(self, username, password=None, use_sudo_user=False):
+    def set_su_user(self, username, password=None):
         self.lib.set_su_user(username, password)
 
     def set_use_sudo_user(self):
@@ -137,8 +151,8 @@ class SSH(ConnectionMediator):
             dst = os.path.join(dst, os.path.basename(src))
         self.lib.get_file(src, dst)
 
-    def get_remote_fd(self, dir, filename):
-        return self.lib.get_remote_fd(dir, filename)
+    def get_remote_fd(self, directory, filename):
+        return self.lib.get_remote_fd(directory, filename)
 
     def remote_copy(self, src, to_fd):
         self.lib.copy_file(src, to_fd)
@@ -165,7 +179,11 @@ class SSH_SCP(SSH):
 
 class FTP(ConnectionMediator):
     def __init__(self):
-        self.lib = PythonFTP()
+        self._lib = PythonFTP()
+
+    @property
+    def lib(self):
+        return self._lib
 
     def open_connection(self, host, port, timeout, prompt, prompt_is_regexp):
         if timeout:
@@ -176,7 +194,7 @@ class FTP(ConnectionMediator):
     def close_connection(self):
         self.lib.close()
 
-    def mkdir(self, path, mode='0755'):
+    def mkdir(self, path, mode=oct(0o755)):
         # mode argument is not used ==> ignored
         # method for creating non existing directories on the remote server
         # no "chmod" command implemented
@@ -188,13 +206,13 @@ class FTP(ConnectionMediator):
             try:
                 # If we can enter the directory, it already exists and we do nothing.
                 self.lib.cwd(pathelm)
-            except PythonFTP.all_errors:
+            except ftplib.all_errors:
                 try:
                     # If we could not enter it, we try to create it.
                     self.lib.mkd(pathelm)
                     # If we still cannot enter it, we were not allowed to cretate it.
                     self.lib.cwd(pathelm)
-                except PythonFTP.error_perm:
+                except ftplib.error_perm:
                     raise AssertionError("Cannot create directory or transfer file '%s'" % pathelm)
         # Before returning, we change back to where we were.
         self.lib.cwd(pwdir)
@@ -202,13 +220,13 @@ class FTP(ConnectionMediator):
     def rmdir(self, path):
         self.lib.rmd(path)
 
-    def put_file(self, srcfile, dstdir, mode):
-        self.lib.cwd(dstdir)
-        fh = open(srcfile, 'rb')
-        self.lib.storbinary('STOR ' + os.path.basename(srcfile), fh)
+    def put_file(self, src, dst, mode):
+        self.lib.cwd(dst)
+        fh = open(src, 'rb')
+        self.lib.storbinary('STOR ' + os.path.basename(src), fh)
         fh.close()
 
-    def get_file(self, srcfile, dst):
+    def get_file(self, src, dst):
         # If the destination is a directory, we can just copy the file into it.
         if os.path.isdir(dst):
             (mydst, myfile) = (dst, '')
@@ -218,8 +236,8 @@ class FTP(ConnectionMediator):
         else:
             (myrealdst, myfile) = os.path.split(dst)
             mydst = tempfile.mkdtemp(dir=myrealdst)
-        remote_dir = os.path.dirname(srcfile)
-        file_basename = os.path.basename(srcfile)
+        remote_dir = os.path.dirname(src)
+        file_basename = os.path.basename(src)
         local_path = os.path.join(mydst, file_basename)
         # Open the local file for writing
         fh = open(local_path, 'wb')

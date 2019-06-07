@@ -1,4 +1,5 @@
 # pylint: disable=unused-argument,protected-access
+# pylint: disable=redefined-builtin
 import os
 import random
 import sys
@@ -69,7 +70,7 @@ class _ExecutionRunner(threading.Thread):
             else:
                 self.result = Result.CONNECTION_FAILURE
             self.messages = self.lib._thread_local.messages
-        except (ValueError, SSHException, IOError):
+        except Exception:  # pylint: disable=broad-except; noqa: W0703
             self.error = sys.exc_info()[1]
             self.trace = sys.exc_info()
             self.messages = self.lib._thread_local.messages
@@ -177,7 +178,7 @@ class BaseEngine(object):
         return self._join_thread(exec_id, timeout)
 
     def kill_background(self, exec_id):
-        if self._threads[exec_id].isAlive():
+        if self._threads[exec_id].is_alive():
             self._threads[exec_id].interrupt()
 
     def _execute_impl(self, command, target, exec_id, check_su=False):
@@ -231,8 +232,8 @@ class BaseEngine(object):
         target_temp_dir = pathops.directorize(target_temp_dir)
         target_temp_file = pathops.join(target_temp_dir, filename)
         self._debug('Copying ' + script_file + ' to ' + target + ':' + target_temp_dir)
-        self._mkdir_impl(target_temp_dir, '0777', target, exec_id)
-        self._put_file_impl(script_file, target_temp_dir, '0777', target, exec_id)
+        self._mkdir_impl(target_temp_dir, oct(0o777), target, exec_id)
+        self._put_file_impl(script_file, target_temp_dir, oct(0o777), target, exec_id)
         command = self._thread_local.connection.get_su_command(
             target_temp_file) + " " + " ".join(arguments)
         result = self._execute_impl(
@@ -337,11 +338,11 @@ class BaseEngine(object):
                 raise ExecutionError('There is no execution with ID "' + exec_id + '"')
             timed_out = False
             self._threads[exec_id].join(timeout)
-            if self._threads[exec_id].isAlive():
+            if self._threads[exec_id].is_alive():
                 timed_out = True
                 self._threads[exec_id].interrupt()
                 self._threads[exec_id].join(5)
-                if self._threads[exec_id].isAlive():
+                if self._threads[exec_id].is_alive():
                     raise TimeoutError(
                         'Execution ID "' + exec_id + '" timed out: failed to interrupt running thread')
             result = self._threads[exec_id].result
